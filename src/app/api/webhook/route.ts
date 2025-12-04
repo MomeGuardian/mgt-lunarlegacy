@@ -1,6 +1,5 @@
 // src/app/api/webhook/route.ts
 import { supabase } from "@/lib/supabase";
-import { postgres } from '@supabase/supabase-js';
 import { NextRequest } from "next/server";
 
 const TOKEN_MINT = "59eXaVJNG441QW54NTmpeDpXEzkuaRjSLm8M6N4Gpump";
@@ -36,15 +35,12 @@ export async function POST(req: NextRequest) {
 
         const reward = realAmount * REWARD_RATE;
 
-        // 给上级加返现
+                // 给上级加返现（用函数，100% 通过 Vercel 构建）
         await supabase
-          .from("users")
-          .update({
-            pending_reward: supabase.postgres.raw(`pending_reward + ${reward}`),
-          })
-          .eq("wallet", buyerData.referrer);
-      }
-    }
+          .rpc("increment_pending_reward", {
+            wallet_addr: buyerData.referrer,
+            amount_to_add: reward,
+          });
 
     return new Response("OK", { status: 200 });
   } catch (err) {
