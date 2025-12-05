@@ -1,5 +1,6 @@
 "use client";
 
+import { PublicKey } from "@solana/web3.js";
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
@@ -66,4 +67,5 @@ export default function WalletContextProvider({
       </WalletProvider>
     </ConnectionProvider>
   );
+
 }
