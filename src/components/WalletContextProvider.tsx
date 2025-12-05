@@ -26,7 +26,7 @@ const OKXWalletAdapter = () => {
       const accounts = await okxProvider.connect();
       return {
         publicKey: new PublicKey(accounts[0]),
-        signTransaction: async (tx) => {
+        signTransaction: async (tx: import("@solana/web3.js").Transaction) => {
           const signed = await okxProvider.signTransaction(tx.serializeMessage());
           return signed;
         },
@@ -67,5 +67,4 @@ export default function WalletContextProvider({
       </WalletProvider>
     </ConnectionProvider>
   );
-
 }
