@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useState, useEffect } from 'react';
+import React from 'react';
 import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
@@ -53,4 +53,4 @@ export default function WalletContextProvider({
   );
 }
 
-const OKXProviderContext = createContext(null);
+const OKXProviderContext = React.createContext(null);
