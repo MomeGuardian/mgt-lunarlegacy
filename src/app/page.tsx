@@ -263,7 +263,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -30, scale: 0.9 }}
               // 调整位置到顶部偏下，更自然
-              className="fixed top-32 left-1/2 -translate-x-1/2 z-[60] w-auto"
+              className="fixed top-85 left-1/2 -translate-x-1/2 z-[120] w-auto"
             >
               <div className="flex flex-col items-center justify-center gap-3 bg-[#0a0a0a]/90 backdrop-blur-xl border border-green-500/30 p-6 rounded-[32px] shadow-[0_0_40px_-10px_rgba(34,197,94,0.4)]">
                 
