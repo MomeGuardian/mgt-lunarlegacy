@@ -171,18 +171,16 @@ export default function Home() {
           duration: 4000
       });
       
-      bindRef.current = false; // 允许重试
+      bindRef.current = false;
     }
   }, [publicKey, inviter, signMessage]);
   useEffect(() => {
     if (connected && publicKey) bindReferral();
   }, [connected, publicKey, bindReferral]);
 
-// ✅ 修改后的手动绑定函数：弹窗居中 + 错误提示优化
   const handleManualBind = async () => {
     if (!publicKey || !signMessage) return;
     
-    // 1. 校验地址长度
     if (!manualReferrer || manualReferrer.length < 32) {
         toast.error("请输入有效的 Solana 地址", {
             position: "top-center",
@@ -190,7 +188,7 @@ export default function Home() {
                 marginTop: "40vh",
                 background: 'rgba(17, 24, 39, 0.95)',
                 color: '#fff',
-                border: '1px solid rgba(239, 68, 68, 0.5)', // 红色边框
+                border: '1px solid rgba(239, 68, 68, 0.5)',
                 padding: '16px 24px',
                 borderRadius: '50px',
                 boxShadow: '0 10px 30px -10px rgba(239, 68, 68, 0.5)',
@@ -199,8 +197,7 @@ export default function Home() {
         });
         return;
     }
-    
-    // 2. 校验是否自绑
+
     if (manualReferrer === publicKey.toBase58()) {
         toast.error("不能绑定自己为上级 ❌", {
             position: "top-center",
@@ -231,8 +228,7 @@ export default function Home() {
 
         setInviter(manualReferrer);
         setIsBinding(false);
-        
-        // ✅ 成功弹窗：居中 + 绿色/粉色风格
+
         toast.success("绑定上级成功！🎉", {
             position: "top-center",
             style: {
@@ -241,7 +237,7 @@ export default function Home() {
                 background: 'rgba(17, 24, 39, 0.95)',
                 backdropFilter: 'blur(16px)',
                 color: '#fff',
-                border: '1px solid rgba(168, 85, 247, 0.6)', // 紫色边框
+                border: '1px solid rgba(168, 85, 247, 0.6)',
                 padding: '20px 30px',
                 borderRadius: '24px',
                 boxShadow: '0 20px 50px -10px rgba(168, 85, 247, 0.5)',
@@ -255,7 +251,6 @@ export default function Home() {
     } catch (err) {
         console.error("手动绑定失败", err);
         
-        // ❌ 失败弹窗：居中 + 红色警示风格
         toast.error("绑定失败，请重试 😭", {
             position: "top-center",
             style: {
@@ -264,10 +259,10 @@ export default function Home() {
                 background: 'rgba(17, 24, 39, 0.95)',
                 backdropFilter: 'blur(16px)',
                 color: '#fff',
-                border: '1px solid rgba(239, 68, 68, 0.6)', // 红色边框
+                border: '1px solid rgba(239, 68, 68, 0.6)',
                 padding: '20px 30px',
                 borderRadius: '24px',
-                boxShadow: '0 20px 50px -10px rgba(239, 68, 68, 0.5)', // 红色光晕
+                boxShadow: '0 20px 50px -10px rgba(239, 68, 68, 0.5)',
                 fontWeight: 'bold',
                 fontSize: '18px',
                 textAlign: 'center',
@@ -277,7 +272,6 @@ export default function Home() {
     }
   };
 
-  // 数据加载逻辑
   useEffect(() => {
     if (!publicKey) {
       setMyRefs(0);
@@ -285,7 +279,6 @@ export default function Home() {
       return;
     }
     const loadData = async () => {
-      // 加载上级信息 (确保显示准确)
       const { data: userData } = await supabase.from("users").select("referrer").eq("wallet", publicKey.toBase58()).maybeSingle();
       if (userData?.referrer) setInviter(userData.referrer);
 
@@ -298,7 +291,6 @@ export default function Home() {
     loadData();
   }, [publicKey]);
 
-  // 领奖逻辑
   const claimReward = async () => {
     if (!publicKey) return;
     setClaiming(true);
@@ -321,17 +313,16 @@ export default function Home() {
     setClaiming(false);
   };
   
-  // 唤起 Jupiter 交易弹窗
   const launchJupiter = () => {
     if (window.Jupiter) {
       window.Jupiter.init({
         displayMode: "modal",
-        endpoint: "https://mainnet.helius-rpc.com/?api-key=ee54db44-f348-4700-b17d-1bc7f33a605b", // Helius RPC
+        endpoint: "https://mainnet.helius-rpc.com/?api-key=ee54db44-f348-4700-b17d-1bc7f33a605b",
         strictTokenList: false,
         formProps: {
           fixedOutputMint: true,
-          initialOutputMint: "59eXaVJNG441QW54NTmpeDpXEzkuaRjSLm8M6N4Gpump", // MGT
-          initialInputMint: "So11111111111111111111111111111111111111112", // SOL
+          initialOutputMint: "59eXaVJNG441QW54NTmpeDpXEzkuaRjSLm8M6N4Gpump",
+          initialInputMint: "So11111111111111111111111111111111111111112",
         },
         styles: {
             theme: 'dark',
@@ -365,38 +356,27 @@ export default function Home() {
       >
         <Navbar />
 
-        {/* 悬浮弹窗 */}
         <AnimatePresence>
           {showWelcome && (
             <motion.div
-              initial={{ opacity: 0, y: -20, scale: 0.9 }} // 添加一点缩放动画让出现更灵动
+              initial={{ opacity: 0, y: -30, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.9 }}
-              // ⚡️ 核心修改区 ⚡️
-              // 1. top-20 -> top-12: 位置上移
-              // 2. w-[90%] -> w-auto: 宽度改为自适应内容
-              // 3. max-w-sm -> max-w-[220px]: 设置一个更小的最大宽度
-              className="fixed top-12 left-1/2 -translate-x-1/2 z-[60] w-auto max-w-[220px]"
+              exit={{ opacity: 0, y: -30, scale: 0.9 }}
+              className="fixed top-28 left-1/2 -translate-x-1/2 z-[60] w-full max-w-sm px-4"
             >
-              <div className="bg-gray-800/90 backdrop-blur-sm rounded-lg p-3 border border-green-500/50 text-center shadow-lg flex flex-col items-center">
-                {/* ⚡️ 核心修改区 ⚡️ */}
-                {/* 4. text-lg -> text-sm: 标题字体变小 */}
-                {/* 5. 添加了一个小的 emoji 或图标 */}
-                <h3 className="text-sm font-bold text-green-400 flex items-center justify-center gap-1">
-                  <span>🎉</span> 连接成功!
+              <div className="bg-gray-800/95 backdrop-blur-md rounded-2xl p-5 border border-green-500/40 text-center shadow-2xl flex flex-col items-center">
+                <h3 className="text-lg font-bold text-green-400 flex items-center justify-center gap-2 mb-2">
+                  <span className="text-2xl">🎊</span> 连接成功!
                 </h3>
-                {/* ⚡️ 核心修改区 ⚡️ */}
-                {/* 6. mt-1 -> mt-0.5: 减小间距 */}
-                {/* 7. text-xs -> text-[10px]: 地址字体变得非常小巧 */}
-                <p className="text-gray-400 text-[10px] mt-0.5 font-mono">
-                  {publicKey?.toBase58().slice(0, 4)}...{publicKey?.toBase58().slice(-4)}
+                <p className="text-gray-300 text-sm font-mono bg-black/30 px-4 py-1.5 rounded-full">
+                  {publicKey?.toBase58()}
                 </p>
+
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* ✅✅✅ 新增：手动绑定弹窗 ✅✅✅ */}
         <AnimatePresence>
             {isBinding && (
                 <motion.div
