@@ -5,7 +5,7 @@ import WalletContextProvider from "@/components/WalletContextProvider";
 import "@solana/wallet-adapter-react-ui/styles.css";
 import { Toaster } from "react-hot-toast";
 import { Suspense } from "react";
-import Script from "next/script"; // ✅ 1. 引入 Next.js 专用脚本组件
+import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,6 +17,18 @@ export const metadata: Metadata = {
     title: "$MGT 直推军团 | 5% 返现",
     description: "连接钱包，开启躺赚模式 🚀",
     images: ['/Solana.png'],
+  },
+
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+  },
+  
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+    'format-detection': 'telephone=no',
   },
 
   icons: {
@@ -35,8 +47,6 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
         <meta name="wallet-connection" content="okxwallet" />
-        {/* 原来的 script 删掉，移到下面用 Script 组件 */}
-        
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -55,8 +65,6 @@ export default function RootLayout({
       </head>
 
       <body className={`${inter.className} bg-gray-950 text-white min-h-screen`}>
-        {/* ✅ 2. 使用 Next.js Script 组件加载 Jupiter */}
-        {/* strategy="beforeInteractive" 表示在页面水合之前就加载，优先级最高 */}
         <Script src="https://terminal.jup.ag/main-v2.js" strategy="beforeInteractive" />
 
         <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading app...</div>}>
