@@ -534,7 +534,7 @@ export default function Home() {
 
                   {/* 邀请数 */}
                   <div className="flex flex-col items-center justify-center p-2 pt-6 md:pt-2">
-                    <p className="text-gray-400 text-xs md:text-sm mb-1">直推人数</p>
+                    <p className="text-gray-400 text-xs md:text-sm mb-1">我的直推人数</p>
                     <p className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-white to-gray-400">{myRefs}</p>
                   </div>
                   {/* 复制链接 */}
@@ -587,7 +587,7 @@ export default function Home() {
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
                   <div className="flex justify-between items-start">
                     <div className="text-left">
-                      <p className="text-blue-200 text-sm font-medium">团队总业绩</p>
+                      <p className="text-blue-200 text-sm font-medium">直推总业绩</p>
                       <p className="text-[10px] text-gray-500 mt-0.5">直推交易额</p>
                     </div>
                     <div className="p-1.5 bg-blue-500/10 rounded-lg text-blue-400 text-sm">💰</div>
