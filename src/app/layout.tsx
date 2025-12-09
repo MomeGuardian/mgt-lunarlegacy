@@ -6,19 +6,21 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 import { Toaster } from "react-hot-toast";
 import { Suspense } from "react";
 import Script from "next/script";
+// ✅ 1. 引入刚才新建的组件
+import VConsoleProvider from "@/components/VConsoleProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
-// ✅ 1. 修复点：单独导出 Viewport 配置
+// 保持你的 Viewport 配置不变
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false, // 禁止缩放，让 App 质感更强
+  userScalable: false,
   themeColor: '#000000',
 };
 
-// ✅ 2. Metadata 配置 (移除 viewport)
+// 保持你的 Metadata 配置不变
 export const metadata: Metadata = {
   metadataBase: new URL('https://mgt-lunarlegacy.vercel.app'),
   title: "$MGT 直推军团 | 5% 返现 + 自动分账",
@@ -87,15 +89,9 @@ export default function RootLayout({
           }}
         />
 
-        {/* 👇👇👇 vConsole 移动端调试工具 (保留在这里) 👇👇👇 */}
-        <Script
-          id="vconsole-script"
-          src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"
-          onLoad={() => {
-            // @ts-ignore
-            new window.VConsole();
-          }}
-        />
+        {/* ✅ 2. 使用封装好的组件加载 vConsole，解决 Server Component 报错 */}
+        <VConsoleProvider />
+        
       </body>
     </html>
   );
