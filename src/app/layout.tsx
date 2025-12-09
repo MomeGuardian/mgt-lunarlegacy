@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import WalletContextProvider from "@/components/WalletContextProvider";
@@ -9,6 +9,16 @@ import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin"] });
 
+// ✅ 1. 修复点：单独导出 Viewport 配置
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false, // 禁止缩放，让 App 质感更强
+  themeColor: '#000000',
+};
+
+// ✅ 2. Metadata 配置 (移除 viewport)
 export const metadata: Metadata = {
   metadataBase: new URL('https://mgt-lunarlegacy.vercel.app'),
   title: "$MGT 直推军团 | 5% 返现 + 自动分账",
@@ -18,23 +28,14 @@ export const metadata: Metadata = {
     description: "连接钱包，开启躺赚模式 🚀",
     images: ['/Solana.png'],
   },
-
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-  },
-  
-  other: {
-    'apple-mobile-web-app-capable': 'yes',
-    'format-detection': 'telephone=no',
-  },
-
   icons: {
     icon: '/Solana.png',
     shortcut: '/Solana.png',
     apple: '/Solana.png',
+  },
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+    'format-detection': 'telephone=no',
   },
 };
 
@@ -65,6 +66,7 @@ export default function RootLayout({
       </head>
 
       <body className={`${inter.className} bg-gray-950 text-white min-h-screen`}>
+        {/* 加载 Jupiter 脚本 */}
         <Script src="https://terminal.jup.ag/main-v2.js" strategy="beforeInteractive" />
 
         <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading app...</div>}>
@@ -85,6 +87,7 @@ export default function RootLayout({
           }}
         />
 
+        {/* 👇👇👇 vConsole 移动端调试工具 (保留在这里) 👇👇👇 */}
         <Script
           id="vconsole-script"
           src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"
@@ -93,7 +96,6 @@ export default function RootLayout({
             new window.VConsole();
           }}
         />
-
       </body>
     </html>
   );
