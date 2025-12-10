@@ -10,15 +10,13 @@ import {
 import { 
   getAssociatedTokenAddress, 
   createTransferInstruction, 
-  getAccount, 
-  TokenAccountNotFoundError, 
-  TokenInvalidAccountOwnerError 
+  createAssociatedTokenAccountInstruction 
 } from '@solana/spl-token';
 import bs58 from 'bs58';
 
 // MGT 代币合约地址
 const MGT_MINT = new PublicKey("59eXaVJNG441QW54NTmpeDpXEzkuaRjSLm8M6N4Gpump");
-// MGT 的精度 (Decimals)，通常是 6 或 9，请去区块浏览器确认！这里假设是 6
+// MGT 的精度
 const DECIMALS = 6; 
 
 export async function POST(request: Request) {
@@ -27,16 +25,16 @@ export async function POST(request: Request) {
 
     if (!wallet) return NextResponse.json({ error: 'Wallet required' }, { status: 400 });
 
-    // 1. 初始化 Supabase (Service Role)
+    // 1. 初始化 Supabase
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 2. 查询用户待领余额
+    // 2. 查询余额
     const { data: user, error } = await supabase
       .from('users')
-      .select('pending_reward, referrals_count')
+      .select('pending_reward')
       .eq('wallet', wallet)
       .single();
 
@@ -44,74 +42,84 @@ export async function POST(request: Request) {
 
     const amountToClaim = user.pending_reward;
 
-    // 🛡️ 最小提现门槛 (防止 0.00001 这种粉尘攻击消耗 Gas)
-    if (amountToClaim < 1) { // 例如：至少攒够 1 个 MGT 才能提
-      return NextResponse.json({ error: '余额不足 1 MGT，继续努力！' }, { status: 400 });
+    if (amountToClaim < 1) { 
+      return NextResponse.json({ error: '余额不足 1 MGT' }, { status: 400 });
     }
 
-    // 3. 初始化 Solana 连接和国库钱包
-    // 使用 Helius 的 RPC 节点以保证速度 (或者用公用的 mainnet-beta)
+    // 3. 连接 Solana
+    // 建议使用 Helius RPC 或 Alchemy，公共节点容易限流
     const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
     
-    // 从环境变量读取私钥
     const secretKeyString = process.env.PAYER_PRIVATE_KEY!;
     if (!secretKeyString) throw new Error("服务器未配置私钥");
 
-    const payer = Keypair.fromSecretKey(bs58.decode(secretKeyString));
+    // 解析私钥
+    let secretKey;
+    try {
+        secretKey = bs58.decode(secretKeyString);
+    } catch (e) {
+        throw new Error("私钥格式错误，请检查环境变量");
+    }
+    const payer = Keypair.fromSecretKey(secretKey);
 
-    console.log(`正在处理提现: ${wallet} 提取 ${amountToClaim} MGT`);
+    console.log(`处理提现: ${wallet} 提取 ${amountToClaim} MGT`);
 
-    // 4. 构建转账交易
-    const destinationWallet = new PublicKey(wallet);
-    
-    // 获取国库的 Token 账户 (源头)
-    const sourceTokenAccount = await getAssociatedTokenAddress(MGT_MINT, payer.publicKey);
-    
-    // 获取用户的 Token 账户 (目的地)
-    const destTokenAccount = await getAssociatedTokenAddress(MGT_MINT, destinationWallet);
-
+    // 4. 构建交易
     const transaction = new Transaction();
+    const destinationWallet = new PublicKey(wallet);
 
-    // 检查用户是否有 Token 账户，如果没有，其实 SPL Transfer 会报错
-    // 为了简化，我们假设用户钱包（像 Phantom）会自动处理 ATA，或者我们直接转账
-    // 这里的 createTransferInstruction 会尝试转给 ATA
+    // A. 获取国库 ATA (源头)
+    const sourceATA = await getAssociatedTokenAddress(MGT_MINT, payer.publicKey);
     
-    // ⚠️ 注意：如果用户从来没持有过 MGT，可能需要先创建 ATA (这需要付租金)
-    // 简单的做法是：让用户自己先买一点点，或者这里帮他付 (成本较高)
-    // 这里我们直接构建转账指令
-    
-    // 将金额转换为最小单位 (Lamports)
+    // B. 获取用户 ATA (目的地)
+    const destATA = await getAssociatedTokenAddress(MGT_MINT, destinationWallet);
+
+    // 🔍 关键修复：检查用户 ATA 是否存在
+    const destAccountInfo = await connection.getAccountInfo(destATA);
+
+    if (!destAccountInfo) {
+        console.log("用户没有 MGT 账户，正在自动创建...");
+        // 添加“创建账户”指令 (Payer 付租金，用户不需要出钱)
+        transaction.add(
+            createAssociatedTokenAccountInstruction(
+                payer.publicKey, // 付款人 (国库)
+                destATA,         // 要创建的 ATA
+                destinationWallet, // 归属人 (用户)
+                MGT_MINT         // 代币类型
+            )
+        );
+    }
+
+    // C. 添加转账指令
     const amountInSmallestUnit = BigInt(Math.floor(amountToClaim * Math.pow(10, DECIMALS)));
-
+    
     transaction.add(
       createTransferInstruction(
-        sourceTokenAccount,
-        destTokenAccount,
+        sourceATA,
+        destATA,
         payer.publicKey,
         amountInSmallestUnit
       )
     );
 
-    // 5. 发送交易并等待确认
+    // 5. 发送交易
     const signature = await sendAndConfirmTransaction(connection, transaction, [payer]);
-    console.log(`✅ 转账成功! Signature: ${signature}`);
+    console.log(`✅ 提现成功! Hash: ${signature}`);
 
-    // 6. 扣除数据库余额 (事务处理)
-    // 将 pending_reward 归零
+    // 6. 扣除余额
     const { error: updateError } = await supabase
       .from('users')
       .update({ pending_reward: 0 })
       .eq('wallet', wallet);
 
     if (updateError) {
-      console.error("❌ 严重错误: 钱转了但数据库扣款失败！请人工核对。", wallet, amountToClaim);
-      // 在这里可以写一个日志表记录这次异常
+        console.error("数据库扣款失败，请人工核对:", wallet);
     } else {
-        // (可选) 记录一条 'claim' 类型的 transaction 记录到 transactions 表
+        // 记录流水
         await supabase.from('transactions').insert({
-            signature: signature, // 提现的哈希
-            buyer: wallet,        // 提现人
-            token_amount: -amountToClaim, // 负数表示提现
+            signature: signature,
+            buyer: wallet,
+            token_amount: -amountToClaim,
             reward_amount: 0,
             referrer: 'SYSTEM_CLAIM'
         });
@@ -119,15 +127,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, signature });
 
-} catch (err: any) {
+  } catch (err: any) {
     console.error('Claim Error:', err);
     
-    // 🛑 调试代码：把错误详情直接返回给前端
-    // 这样你的网页弹窗就会显示具体的错误原因（比如 "私钥格式错误" 或 "余额不足"）
+    // 返回具体错误给前端
     const errorMessage = err instanceof Error ? err.message : String(err);
-    
     return NextResponse.json({ 
-        error: `后端崩溃详情: ${errorMessage}` 
+        error: `提现失败: ${errorMessage}` 
     }, { status: 500 });
   }
 }
