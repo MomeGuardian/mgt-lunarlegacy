@@ -119,17 +119,15 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, signature });
 
-  } catch (err: any) {
+} catch (err: any) {
     console.error('Claim Error:', err);
     
-    // 常见错误处理
-    let errorMsg = '提现失败，请稍后重试';
-    if (err.message.includes("TokenAccountNotFoundError")) {
-        errorMsg = "您的钱包尚未激活 MGT 代币账户，请先去买入任意数量的 MGT 激活一下。";
-    } else if (err.message.includes("insufficient funds")) {
-        errorMsg = "项目方国库余额不足，请联系管理员补货！";
-    }
-
-    return NextResponse.json({ error: errorMsg }, { status: 500 });
+    // 🛑 调试代码：把错误详情直接返回给前端
+    // 这样你的网页弹窗就会显示具体的错误原因（比如 "私钥格式错误" 或 "余额不足"）
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    
+    return NextResponse.json({ 
+        error: `后端崩溃详情: ${errorMessage}` 
+    }, { status: 500 });
   }
 }
