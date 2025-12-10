@@ -415,16 +415,33 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (connected) {
+    if (connected && publicKey) {
       const loadData = async () => {
-        const { data: userData } = await supabase.from("users").select("referrer").eq("wallet", publicKey.toBase58()).maybeSingle();
-        if (userData?.referrer) setInviter(userData.referrer);
+        try {
+          const { data: userData } = await supabase
+            .from("users")
+            .select("referrer")
+            .eq("wallet", publicKey.toBase58())
+            .maybeSingle();
+            
+          if (userData?.referrer) setInviter(userData.referrer);
 
-        const { count } = await supabase.from("users").select("*", { count: "exact", head: true }).eq("referrer", publicKey.toBase58());
-        setMyRefs(count || 0);
-        const { data } = await supabase.from("users").select("pending_reward").eq("wallet", publicKey.toBase58()).single();
-        setPendingReward(data?.pending_reward || 0);
-        setTeamVolume(0); 
+          const { count } = await supabase
+            .from("users")
+            .select("*", { count: "exact", head: true })
+            .eq("referrer", publicKey.toBase58());
+          setMyRefs(count || 0);
+
+          const { data } = await supabase
+            .from("users")
+            .select("pending_reward")
+            .eq("wallet", publicKey.toBase58())
+            .single();
+          setPendingReward(data?.pending_reward || 0);
+          setTeamVolume(0); 
+        } catch (error) {
+          console.error("加载数据失败:", error);
+        }
       };
       loadData();
     } else {
