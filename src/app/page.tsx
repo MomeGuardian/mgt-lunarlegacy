@@ -422,13 +422,57 @@ export default function Home() {
     if (connected && publicKey) {
       const loadData = async () => {
         try {
-          const { data: userData } = await supabase
+          // 3. 获取待领收益
+          const { data } = await supabase
             .from("users")
-            .select("referrer")
+            .select("pending_reward, team_volume") // 👈 记得把 team_volume 也选出来
             .eq("wallet", publicKey.toBase58())
-            .maybeSingle();
+            .single();
             
-          if (userData?.referrer) setInviter(userData.referrer);
+          setPendingReward(data?.pending_reward || 0);
+          
+          // ✅ 核心修改：读取数据库里的真实业绩 (USDT)
+          setTeamVolume(data?.team_volume || 0);
+
+          // ⚡️ 实时监听数据变化 (Realtime)
+    useEffect(() => {
+      if (!connected || !publicKey) return;
+    
+      // 创建订阅通道
+      const channel = supabase
+        .channel('realtime_users')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',           // 监听更新事件
+            schema: 'public',
+            table: 'users',
+            filter: `wallet=eq.${publicKey.toBase58()}` // 只监听自己的钱包变化
+          },
+          (payload) => {
+            // 当数据库更新时，立即更新前端显示的数字
+            const newUser = payload.new as any;
+            if (newUser) {
+              console.log("⚡️ 数据实时更新:", newUser);
+              setPendingReward(newUser.pending_reward || 0);
+              setTeamVolume(newUser.team_volume || 0); // ✅ 业绩也会实时跳动
+              toast("🚀 恭喜！您的团队产生了新业绩！", {
+                  icon: '💰',
+                  style: {
+                      background: '#16171D',
+                      color: '#fff',
+                      border: '1px solid #22c55e'
+                  }
+              });
+            }
+          }
+        )
+        .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [connected, publicKey]);
 
           const { count } = await supabase
             .from("users")
