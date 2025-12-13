@@ -1134,7 +1134,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 50, scale: 0.95 }}
                 onClick={(e) => e.stopPropagation()} 
-                className="w-full max-w-4xl bg-[#16171D] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
+                className="w-full max-w-4xl bg-[#16171D] border border-gray-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col h-[85vh]"
               >
                 {/* 弹窗头部 */}
                 <div className="p-5 border-b border-gray-800 flex justify-between items-center bg-white/5">
@@ -1151,9 +1151,9 @@ export default function Home() {
                 </div>
 
                 {/* 内容区域 - 放入 Leaderboard 组件 */}
-                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-[#0b0c10]">
+                <div className="flex-1 overflow-hidden bg-[#0b0c10]">
                     {/* 👇 直接复用你之前写好的排行榜组件 */}
-                    <Leaderboard />
+                    <Leaderboard currentUserWallet={publicKey?.toBase58()} />
                 </div>
                 
                 {/* 底部关闭栏 */}
